@@ -19,6 +19,12 @@ function add_setting_location {
   sed -i -r "s/proxy_pass.*$/\0\n    $1/g" $DOKKU_ROOT/$APP/nginx.conf
 }
 
+function escape_for_sed_replacement {
+  # Escape replacement metacharacters so values like https://... do not break sed.
+  printf '%s' "$1" | sed -e 's/[\/&]/\\&/g'
+}
+ALLOW_ORIGIN_ESCAPED="$(escape_for_sed_replacement "$ALLOW_ORIGIN")"
+
 # Enable Client Side Caching
 add_setting_location "add_header 'Cache-Control' 'max-age=86400' always;"
 
@@ -27,4 +33,4 @@ add_setting_location "add_header 'X-Cache-Status' \$upstream_cache_status always
 add_setting_location "add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, PATCH, OPTIONS' always;"
 add_setting_location "add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range' always;"
 add_setting_location "add_header 'Access-Control-Expose-Headers' 'Content-Length,Content-Range' always;"
-add_setting_location "add_header 'Access-Control-Allow-Origin' '$ALLOW_ORIGIN' always;"
+add_setting_location "add_header 'Access-Control-Allow-Origin' '$ALLOW_ORIGIN_ESCAPED' always;"
