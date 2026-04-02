@@ -29,6 +29,12 @@ Set a specific origin instead of `*`
 dokku nginx-cors:set-origin MYAPP https://onyx.orthorobot.com
 ```
 
+Set multiple allowed origins (comma-separated)
+
+```shell
+dokku nginx-cors:set-origin MYAPP "https://onyx.orthorobot.com,https://staging.viewtlab.com,https://test.viewtlab.com,https://test.v2.viewtlab.com"
+```
+
 Clear custom origin and go back to `*`
 
 ```shell

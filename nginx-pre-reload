@@ -15,8 +15,19 @@ if [[ -e $DOKKU_ROOT/$APP/NGINX_CORS_ORIGIN ]]; then
   [[ -z "${ALLOW_ORIGIN:-}" ]] && ALLOW_ORIGIN="*"
 fi
 
+function escape_for_sed_replacement {
+  printf '%s' "$1" | sed -e 's/[\/&]/\\&/g'
+}
+
+function escape_for_regex {
+  printf '%s' "$1" | sed -e 's/[][(){}.^$*+?|\\/]/\\&/g'
+}
+
 function add_setting_location {
-  sed -i -r "s/proxy_pass.*$/\0\n    $1/g" $DOKKU_ROOT/$APP/nginx.conf
+  local line="$1"
+  local escaped_line
+  escaped_line="$(escape_for_sed_replacement "$line")"
+  sed -i -r "s/proxy_pass.*$/\\0\\n    ${escaped_line}/g" "$DOKKU_ROOT/$APP/nginx.conf"
 }
 
 # Enable Client Side Caching
@@ -27,4 +38,26 @@ add_setting_location "add_header 'X-Cache-Status' \$upstream_cache_status always
 add_setting_location "add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, PATCH, OPTIONS' always;"
 add_setting_location "add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range' always;"
 add_setting_location "add_header 'Access-Control-Expose-Headers' 'Content-Length,Content-Range' always;"
-add_setting_location "add_header 'Access-Control-Allow-Origin' '$ALLOW_ORIGIN' always;"
+
+if [[ "$ALLOW_ORIGIN" == "*" ]]; then
+  add_setting_location "add_header 'Access-Control-Allow-Origin' '*' always;"
+elif [[ "$ALLOW_ORIGIN" == *","* ]]; then
+  IFS=',' read -r -a ORIGIN_ITEMS <<< "$ALLOW_ORIGIN"
+  REGEX_PARTS=()
+  for RAW_ORIGIN in "${ORIGIN_ITEMS[@]}"; do
+    ORIGIN_TRIMMED="$(printf '%s' "$RAW_ORIGIN" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+    [[ -z "$ORIGIN_TRIMMED" ]] && continue
+    REGEX_PARTS+=("$(escape_for_regex "$ORIGIN_TRIMMED")")
+  done
+
+  if [[ ${#REGEX_PARTS[@]} -eq 0 ]]; then
+    add_setting_location "add_header 'Access-Control-Allow-Origin' '*' always;"
+  else
+    ORIGIN_REGEX="$(IFS='|'; printf '%s' "${REGEX_PARTS[*]}")"
+    add_setting_location "set \$cors_allow_origin '';"
+    add_setting_location "if (\$http_origin ~* '^(${ORIGIN_REGEX})$') { set \$cors_allow_origin \$http_origin; }"
+    add_setting_location "add_header 'Access-Control-Allow-Origin' \"\$cors_allow_origin\" always;"
+  fi
+else
+  add_setting_location "add_header 'Access-Control-Allow-Origin' '$ALLOW_ORIGIN' always;"
+fi
