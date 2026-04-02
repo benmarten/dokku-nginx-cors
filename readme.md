@@ -23,6 +23,18 @@ Enable nginx CORS
 dokku nginx-cors:enable MYAPP
 ```
 
+Set a specific origin instead of `*`
+
+```shell
+dokku nginx-cors:set-origin MYAPP https://onyx.orthorobot.com
+```
+
+Clear custom origin and go back to `*`
+
+```shell
+dokku nginx-cors:clear-origin MYAPP
+```
+
 Disable nginx cache for your app
 
 ```shell

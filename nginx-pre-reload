@@ -9,6 +9,12 @@ if [[ ! -e $DOKKU_ROOT/$APP/NGINX_CORS ]]; then
   exit 0
 fi
 
+ALLOW_ORIGIN="*"
+if [[ -e $DOKKU_ROOT/$APP/NGINX_CORS_ORIGIN ]]; then
+  ALLOW_ORIGIN="$(cat "$DOKKU_ROOT/$APP/NGINX_CORS_ORIGIN")"
+  [[ -z "${ALLOW_ORIGIN:-}" ]] && ALLOW_ORIGIN="*"
+fi
+
 function add_setting_location {
   sed -i -r "s/proxy_pass.*$/\0\n    $1/g" $DOKKU_ROOT/$APP/nginx.conf
 }
@@ -21,4 +27,4 @@ add_setting_location "add_header 'X-Cache-Status' \$upstream_cache_status always
 add_setting_location "add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, PATCH, OPTIONS' always;"
 add_setting_location "add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range' always;"
 add_setting_location "add_header 'Access-Control-Expose-Headers' 'Content-Length,Content-Range' always;"
-add_setting_location "add_header 'Access-Control-Allow-Origin' '*' always; "
+add_setting_location "add_header 'Access-Control-Allow-Origin' '$ALLOW_ORIGIN' always;"

@@ -5,19 +5,21 @@ set -eo pipefail
 
 case "$1" in
 
-help | nginx-cors:help)
+  help | nginx-cors:help)
   help_content_func() {
     declare desc="return help_content string"
     cat <<help_content
       nginx-cors:enable <app>, Enable nginx CORS for <app>
       nginx-cors:disable <app>, Disable nginx CORS for <app>
+      nginx-cors:set-origin <app> <origin>, Set Access-Control-Allow-Origin for <app>
+      nginx-cors:clear-origin <app>, Clear custom origin for <app> (defaults to *)
 help_content
   }
 
   if [[ $1 = "nginx-cors:help" ]]; then
     echo -e 'Usage: dokku nginx-cors[:COMMAND]'
     echo ''
-    echo 'Enable or disable cache for single apps'
+    echo 'Enable or disable CORS for single apps'
     echo ''
     echo 'Additional commands:'
     help_content_func | sort | column -c2 -t -s,
