@@ -26,13 +26,13 @@ dokku nginx-cors:enable MYAPP
 Set a specific origin instead of `*`
 
 ```shell
-dokku nginx-cors:set-origin MYAPP https://onyx.orthorobot.com
+dokku nginx-cors:set-origin MYAPP https://app.example.com
 ```
 
 Set multiple allowed origins (comma-separated)
 
 ```shell
-dokku nginx-cors:set-origin MYAPP "https://onyx.orthorobot.com,https://staging.viewtlab.com,https://test.viewtlab.com,https://test.v2.viewtlab.com"
+dokku nginx-cors:set-origin MYAPP "https://app.example.com,https://staging.example.com,https://test.example.com"
 ```
 
 Clear custom origin and go back to `*`
