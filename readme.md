@@ -41,8 +41,20 @@ Clear custom origin and go back to `*`
 dokku nginx-cors:clear-origin MYAPP
 ```
 
-Disable nginx cache for your app
+Disable nginx CORS for your app
 
 ```shell
 dokku nginx-cors:disable MYAPP
+```
+
+Check CORS configuration for an app
+
+```shell
+dokku nginx-cors:report MYAPP
+```
+
+Check CORS configuration for all apps
+
+```shell
+dokku nginx-cors:report
 ```

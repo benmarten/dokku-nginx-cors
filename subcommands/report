@@ -1,0 +1,87 @@
+#!/usr/bin/env bash
+set -eo pipefail
+[[ $DOKKU_TRACE ]] && set -x
+source "$PLUGIN_CORE_AVAILABLE_PATH/common/functions"
+source "$PLUGIN_CORE_AVAILABLE_PATH/common/property-functions"
+
+cmd-nginx-cors-report() {
+  declare desc="shows the nginx-cors status for an app"
+  declare cmd="nginx-cors:report"
+  [[ "$1" == "$cmd" ]] && shift 1
+  declare APP="$1" INFO_FLAG="$2"
+
+  if [[ -n "$APP" ]] && [[ "$APP" == --* ]]; then
+    INFO_FLAG="$APP"
+    APP=""
+  fi
+
+  if [[ -z "$APP" ]] && [[ -z "$INFO_FLAG" ]]; then
+    INFO_FLAG="true"
+  fi
+
+  if [[ -z "$APP" ]]; then
+    for app in $(dokku_apps); do
+      cmd-nginx-cors-report-single "$app" "$INFO_FLAG" | tee || true
+    done
+  else
+    cmd-nginx-cors-report-single "$APP" "$INFO_FLAG"
+  fi
+}
+
+cmd-nginx-cors-report-single() {
+  declare APP="$1" INFO_FLAG="$2"
+  if [[ "$INFO_FLAG" == "true" ]]; then
+    INFO_FLAG=""
+  fi
+  verify_app_name "$APP"
+  local flag_map=(
+    "--nginx-cors-enabled: $(fn-nginx-cors-enabled "$APP")"
+    "--nginx-cors-allowed-origin: $(fn-nginx-cors-allowed-origin "$APP")"
+  )
+
+  if [[ -z "$INFO_FLAG" ]]; then
+    dokku_log_info2_quiet "$APP nginx-cors information"
+    for flag in "${flag_map[@]}"; do
+      key="$(echo "${flag#--}" | cut -f1 -d'=' | tr - ' ')"
+      dokku_log_verbose "$(printf "%-30s %-25s" "${key^}" "${flag#*: }")"
+    done
+  else
+    local match=false
+    local value_exists=false
+    for flag in "${flag_map[@]}"; do
+      valid_flags="${valid_flags} $(echo "$flag" | cut -d':' -f1)"
+      if [[ "$flag" == "${INFO_FLAG}:"* ]]; then
+        value=${flag#*: }
+        size="${#value}"
+        if [[ "$size" -ne 0 ]]; then
+          echo "$value" && match=true && value_exists=true
+        else
+          match=true
+        fi
+      fi
+    done
+    [[ "$match" == "true" ]] || dokku_log_fail "Invalid flag passed, valid flags:${valid_flags}"
+  fi
+}
+
+fn-nginx-cors-enabled() {
+  declare APP="$1"
+  if [[ -f "$DOKKU_ROOT/$APP/NGINX_CORS" ]]; then
+    echo "true"
+  else
+    echo "false"
+  fi
+}
+
+fn-nginx-cors-allowed-origin() {
+  declare APP="$1"
+  if [[ -f "$DOKKU_ROOT/$APP/NGINX_CORS_ORIGIN" ]]; then
+    cat "$DOKKU_ROOT/$APP/NGINX_CORS_ORIGIN"
+  elif [[ -f "$DOKKU_ROOT/$APP/NGINX_CORS" ]]; then
+    echo "*"
+  else
+    echo ""
+  fi
+}
+
+cmd-nginx-cors-report "$@"
